@@ -1,6 +1,14 @@
 package com.backend.ecommerce.controller;
 
 import com.backend.ecommerce.service.CartService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,11 +17,12 @@ import java.util.Map;
 
 /**
  * REST Controller for managing shopping cart operations
- * Provides endpoints for cart management, add/remove items, and checkout
+ * Provides endpoints for cart management, item operations, and checkout
  */
 @RestController
 @RequestMapping("/api/cart")
 @CrossOrigin(origins = "*")
+@Tag(name = "Shopping Cart", description = "APIs for managing shopping cart, adding/removing items, and checkout process")
 public class CartController {
 
     @Autowired
@@ -21,41 +30,78 @@ public class CartController {
 
     /**
      * Get user's cart
-     * @param userId User ID (from authentication)
-     * @return Cart details with items
      */
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getUserCart(@RequestParam String userId) {
+    @Operation(
+        summary = "Get user's cart",
+        description = "Retrieves the current shopping cart for the authenticated user"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Cart retrieved successfully",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": true, \"cart\": {\"id\": \"uuid\", \"items\": [...], \"totalAmount\": 99.99}}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Cart not found"
+        )
+    })
+    public ResponseEntity<Map<String, Object>> getUserCart(
+            @Parameter(description = "User ID", example = "user-uuid")
+            @RequestParam String userId) {
+        
         Map<String, Object> response = cartService.getUserCart(userId);
         
         if ((Boolean) response.get("success")) {
             return ResponseEntity.ok(response);
         } else {
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.notFound().build();
         }
     }
 
     /**
      * Add product to cart
-     * @param userId User ID (from authentication)
-     * @param request Request body with productId and quantity
-     * @return Response with updated cart
      */
     @PostMapping("/add")
+    @Operation(
+        summary = "Add product to cart",
+        description = "Adds a product to the user's shopping cart with specified quantity"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Product added to cart successfully",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": true, \"message\": \"Product added to cart\", \"cart\": {...}}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid input or insufficient stock",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": false, \"error\": \"Insufficient stock\"}"
+                )
+            )
+        )
+    })
     public ResponseEntity<Map<String, Object>> addToCart(
+            @Parameter(description = "User ID", example = "user-uuid")
             @RequestParam String userId,
-            @RequestBody Map<String, Object> request) {
-        
-        String productId = (String) request.get("productId");
-        Integer quantity = (Integer) request.get("quantity");
-        
-        if (productId == null || quantity == null || quantity <= 0) {
-            Map<String, Object> errorResponse = Map.of(
-                "success", false,
-                "message", "Invalid product ID or quantity"
-            );
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
+            @Parameter(description = "Product ID", example = "product-uuid")
+            @RequestParam String productId,
+            @Parameter(description = "Quantity to add", example = "2")
+            @RequestParam Integer quantity) {
         
         Map<String, Object> response = cartService.addToCart(userId, productId, quantity);
         
@@ -68,26 +114,35 @@ public class CartController {
 
     /**
      * Update cart item quantity
-     * @param userId User ID (from authentication)
-     * @param itemId Cart item ID
-     * @param request Request body with new quantity
-     * @return Response with updated cart
      */
     @PutMapping("/items/{itemId}")
+    @Operation(
+        summary = "Update cart item quantity",
+        description = "Updates the quantity of a specific item in the shopping cart"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Quantity updated successfully",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": true, \"message\": \"Quantity updated\", \"cart\": {...}}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid quantity or insufficient stock"
+        )
+    })
     public ResponseEntity<Map<String, Object>> updateCartItemQuantity(
+            @Parameter(description = "User ID", example = "user-uuid")
             @RequestParam String userId,
+            @Parameter(description = "Cart item ID", example = "item-uuid")
             @PathVariable String itemId,
-            @RequestBody Map<String, Object> request) {
-        
-        Integer quantity = (Integer) request.get("quantity");
-        
-        if (quantity == null || quantity <= 0) {
-            Map<String, Object> errorResponse = Map.of(
-                "success", false,
-                "message", "Invalid quantity"
-            );
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
+            @Parameter(description = "New quantity", example = "3")
+            @RequestParam Integer quantity) {
         
         Map<String, Object> response = cartService.updateCartItemQuantity(userId, itemId, quantity);
         
@@ -100,13 +155,32 @@ public class CartController {
 
     /**
      * Remove item from cart
-     * @param userId User ID (from authentication)
-     * @param itemId Cart item ID
-     * @return Response with updated cart
      */
     @DeleteMapping("/items/{itemId}")
+    @Operation(
+        summary = "Remove item from cart",
+        description = "Removes a specific item from the shopping cart"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Item removed successfully",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": true, \"message\": \"Item removed\", \"cart\": {...}}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Cart item not found"
+        )
+    })
     public ResponseEntity<Map<String, Object>> removeFromCart(
+            @Parameter(description = "User ID", example = "user-uuid")
             @RequestParam String userId,
+            @Parameter(description = "Cart item ID", example = "item-uuid")
             @PathVariable String itemId) {
         
         Map<String, Object> response = cartService.removeFromCart(userId, itemId);
@@ -114,59 +188,99 @@ public class CartController {
         if ((Boolean) response.get("success")) {
             return ResponseEntity.ok(response);
         } else {
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.notFound().build();
         }
     }
 
     /**
      * Clear user's cart
-     * @param userId User ID (from authentication)
-     * @return Response with confirmation
      */
     @DeleteMapping("/clear")
-    public ResponseEntity<Map<String, Object>> clearCart(@RequestParam String userId) {
-        Map<String, Object> response = cartService.clearCart(userId);
+    @Operation(
+        summary = "Clear user's cart",
+        description = "Removes all items from the user's shopping cart"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Cart cleared successfully",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": true, \"message\": \"Cart cleared\"}"
+                )
+            )
+        )
+    })
+    public ResponseEntity<Map<String, Object>> clearCart(
+            @Parameter(description = "User ID", example = "user-uuid")
+            @RequestParam String userId) {
         
-        if ((Boolean) response.get("success")) {
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.badRequest().body(response);
-        }
+        Map<String, Object> response = cartService.clearCart(userId);
+        return ResponseEntity.ok(response);
     }
 
     /**
-     * Get cart summary (item count, total amount)
-     * @param userId User ID (from authentication)
-     * @return Cart summary
+     * Get cart summary
      */
     @GetMapping("/summary")
-    public ResponseEntity<Map<String, Object>> getCartSummary(@RequestParam String userId) {
-        Map<String, Object> response = cartService.getCartSummary(userId);
+    @Operation(
+        summary = "Get cart summary",
+        description = "Retrieves a summary of the user's cart including item count and total amount"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Cart summary retrieved successfully",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": true, \"itemCount\": 3, \"totalAmount\": 149.97}"
+                )
+            )
+        )
+    })
+    public ResponseEntity<Map<String, Object>> getCartSummary(
+            @Parameter(description = "User ID", example = "user-uuid")
+            @RequestParam String userId) {
         
-        if ((Boolean) response.get("success")) {
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.badRequest().body(response);
-        }
+        Map<String, Object> response = cartService.getCartSummary(userId);
+        return ResponseEntity.ok(response);
     }
 
     /**
-     * Check if product exists in user's cart
-     * @param userId User ID (from authentication)
-     * @param productId Product ID
-     * @return Response indicating if product is in cart
+     * Check if product exists in cart
      */
     @GetMapping("/check/{productId}")
+    @Operation(
+        summary = "Check if product exists in cart",
+        description = "Checks whether a specific product is already in the user's cart"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Check completed successfully",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": true, \"exists\": true, \"quantity\": 2}"
+                )
+            )
+        )
+    })
     public ResponseEntity<Map<String, Object>> checkProductInCart(
+            @Parameter(description = "User ID", example = "user-uuid")
             @RequestParam String userId,
+            @Parameter(description = "Product ID to check", example = "product-uuid")
             @PathVariable String productId) {
         
-        boolean isInCart = cartService.isProductInCart(userId, productId);
+        boolean exists = cartService.isProductInCart(userId, productId);
+        Integer quantity = cartService.getCartItemCount(userId);
         
         Map<String, Object> response = Map.of(
             "success", true,
-            "isInCart", isInCart,
-            "productId", productId
+            "exists", exists,
+            "quantity", exists ? quantity : 0
         );
         
         return ResponseEntity.ok(response);
@@ -174,24 +288,33 @@ public class CartController {
 
     /**
      * Apply discount to cart
-     * @param userId User ID (from authentication)
-     * @param request Request body with discount code
-     * @return Response with applied discount
      */
     @PostMapping("/discount")
+    @Operation(
+        summary = "Apply discount to cart",
+        description = "Applies a discount code to the user's shopping cart"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Discount applied successfully",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": true, \"message\": \"Discount applied\", \"discountAmount\": 10.00}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid or expired discount code"
+        )
+    })
     public ResponseEntity<Map<String, Object>> applyDiscount(
+            @Parameter(description = "User ID", example = "user-uuid")
             @RequestParam String userId,
-            @RequestBody Map<String, Object> request) {
-        
-        String discountCode = (String) request.get("discountCode");
-        
-        if (discountCode == null || discountCode.trim().isEmpty()) {
-            Map<String, Object> errorResponse = Map.of(
-                "success", false,
-                "message", "Discount code is required"
-            );
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
+            @Parameter(description = "Discount code", example = "SAVE20")
+            @RequestParam String discountCode) {
         
         Map<String, Object> response = cartService.applyDiscount(userId, discountCode);
         
@@ -204,28 +327,95 @@ public class CartController {
 
     /**
      * Remove discount from cart
-     * @param userId User ID (from authentication)
-     * @return Response with removed discount
      */
     @DeleteMapping("/discount")
-    public ResponseEntity<Map<String, Object>> removeDiscount(@RequestParam String userId) {
-        Map<String, Object> response = cartService.removeDiscount(userId);
+    @Operation(
+        summary = "Remove discount from cart",
+        description = "Removes any applied discount from the user's shopping cart"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Discount removed successfully",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": true, \"message\": \"Discount removed\"}"
+                )
+            )
+        )
+    })
+    public ResponseEntity<Map<String, Object>> removeDiscount(
+            @Parameter(description = "User ID", example = "user-uuid")
+            @RequestParam String userId) {
         
-        if ((Boolean) response.get("success")) {
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.badRequest().body(response);
-        }
+        Map<String, Object> response = cartService.removeDiscount(userId);
+        return ResponseEntity.ok(response);
     }
 
     /**
-     * Validate cart items (check stock, prices)
-     * @param userId User ID (from authentication)
-     * @return Validation results
+     * Validate cart items
      */
     @PostMapping("/validate")
-    public ResponseEntity<Map<String, Object>> validateCart(@RequestParam String userId) {
+    @Operation(
+        summary = "Validate cart items",
+        description = "Validates all items in the cart for stock availability and price accuracy"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Cart validation completed",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": true, \"valid\": true, \"issues\": []}"
+                )
+            )
+        )
+    })
+    public ResponseEntity<Map<String, Object>> validateCart(
+            @Parameter(description = "User ID", example = "user-uuid")
+            @RequestParam String userId) {
+        
         Map<String, Object> response = cartService.validateCart(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Checkout cart
+     */
+    @PostMapping("/checkout")
+    @Operation(
+        summary = "Checkout cart",
+        description = "Converts the shopping cart to an order and processes checkout"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Checkout completed successfully",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": true, \"message\": \"Order created\", \"orderId\": \"order-uuid\"}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Checkout failed - validation errors or insufficient stock"
+        )
+    })
+    public ResponseEntity<Map<String, Object>> checkoutCart(
+            @Parameter(description = "User ID", example = "user-uuid")
+            @RequestParam String userId,
+            @RequestBody(required = false) Map<String, Object> deliveryAddress) {
+        
+        Map<String, Object> response;
+        if (deliveryAddress != null) {
+            response = cartService.checkoutCart(userId, deliveryAddress);
+        } else {
+            response = cartService.checkoutCart(userId);
+        }
         
         if ((Boolean) response.get("success")) {
             return ResponseEntity.ok(response);
@@ -235,54 +425,62 @@ public class CartController {
     }
 
     /**
-     * Checkout cart (convert to order)
-     * @param userId User ID (from authentication)
-     * @param deliveryAddress Delivery address details
-     * @return Order creation response
-     */
-    @PostMapping("/checkout")
-    public ResponseEntity<Map<String, Object>> checkoutCart(
-            @RequestParam String userId,
-            @RequestBody Map<String, Object> deliveryAddress) {
-        
-        Map<String, Object> response = cartService.checkoutCart(userId, deliveryAddress);
-        
-        if ((Boolean) response.get("success")) {
-            return ResponseEntity.status(201).body(response);
-        } else {
-            return ResponseEntity.badRequest().body(response);
-        }
-    }
-
-    /**
-     * Save cart for later (for guest users)
-     * @param sessionId Session ID
-     * @param cartData Cart data
-     * @return Response with saved cart ID
+     * Save cart for later
      */
     @PostMapping("/save")
+    @Operation(
+        summary = "Save cart for later",
+        description = "Saves the current cart state for later retrieval (useful for guest users)"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Cart saved successfully",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": true, \"message\": \"Cart saved\", \"savedCartId\": \"saved-uuid\"}"
+                )
+            )
+        )
+    })
     public ResponseEntity<Map<String, Object>> saveCartForLater(
+            @Parameter(description = "Session ID or user ID", example = "session-uuid")
             @RequestParam String sessionId,
             @RequestBody Map<String, Object> cartData) {
         
         Map<String, Object> response = cartService.saveCartForLater(sessionId, cartData);
-        
-        if ((Boolean) response.get("success")) {
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.badRequest().body(response);
-        }
+        return ResponseEntity.ok(response);
     }
 
     /**
-     * Restore saved cart to user account
-     * @param userId User ID (from authentication)
-     * @param savedCartId Saved cart ID
-     * @return Response with restored cart
+     * Restore saved cart
      */
     @PostMapping("/restore/{savedCartId}")
+    @Operation(
+        summary = "Restore saved cart",
+        description = "Restores a previously saved cart to the user's account"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Cart restored successfully",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": true, \"message\": \"Cart restored\", \"cart\": {...}}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Saved cart not found"
+        )
+    })
     public ResponseEntity<Map<String, Object>> restoreSavedCart(
+            @Parameter(description = "User ID", example = "user-uuid")
             @RequestParam String userId,
+            @Parameter(description = "Saved cart ID", example = "saved-uuid")
             @PathVariable String savedCartId) {
         
         Map<String, Object> response = cartService.restoreSavedCart(userId, savedCartId);
@@ -290,7 +488,7 @@ public class CartController {
         if ((Boolean) response.get("success")) {
             return ResponseEntity.ok(response);
         } else {
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.notFound().build();
         }
     }
 }

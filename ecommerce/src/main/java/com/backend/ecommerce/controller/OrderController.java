@@ -354,7 +354,7 @@ public class OrderController {
             @RequestBody Map<String, Object> deliveryData,
             @RequestParam String userId) {
         
-        Map<String, Object> response = orderService.updateOrderDelivery(orderId, deliveryData, userId);
+        Map<String, Object> response = orderService.updateOrderDelivery(orderId, userId, deliveryData);
         
         if ((Boolean) response.get("success")) {
             return ResponseEntity.ok(response);

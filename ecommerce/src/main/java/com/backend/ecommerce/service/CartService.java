@@ -121,4 +121,18 @@ public interface CartService {
      * @return Response with restored cart
      */
     Map<String, Object> restoreSavedCart(String userId, String savedCartId);
+    
+    /**
+     * Convert cart to order (overloaded method)
+     * @param userId User ID
+     * @return Order creation response
+     */
+    Map<String, Object> checkoutCart(String userId);
+    
+    /**
+     * Save cart for later (overloaded method)
+     * @param userId User ID
+     * @return Response with saved cart ID
+     */
+    Map<String, Object> saveCartForLater(String userId);
 }

@@ -30,6 +30,11 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
     List<Payment> findByUserId(String userId);
     
     /**
+     * Find payments by user ID with pagination
+     */
+    org.springframework.data.domain.Page<Payment> findByUserId(String userId, org.springframework.data.domain.Pageable pageable);
+    
+    /**
      * Find payments by status
      */
     List<Payment> findByStatus(Payment.PaymentStatus status);

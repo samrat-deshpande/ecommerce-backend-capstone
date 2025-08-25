@@ -142,11 +142,11 @@ public interface OrderService {
     /**
      * Update order delivery information
      * @param orderId Order ID
-     * @param deliveryData Delivery information
      * @param userId User ID (for authorization)
+     * @param deliveryData Delivery information
      * @return Response with updated delivery info
      */
-    Map<String, Object> updateOrderDelivery(String orderId, Map<String, Object> deliveryData, String userId);
+    Map<String, Object> updateOrderDelivery(String orderId, String userId, Map<String, Object> deliveryData);
     
     /**
      * Request order refund
@@ -177,4 +177,32 @@ public interface OrderService {
      * @return Calculated totals
      */
     Map<String, Object> calculateOrderTotals(String orderId);
+    
+    /**
+     * Create order with items and delivery details
+     * @param userId User ID
+     * @param items List of order items
+     * @param deliveryAddress Delivery address
+     * @param paymentMethod Payment method
+     * @return Created order
+     */
+    Map<String, Object> createOrder(String userId, Object items, String deliveryAddress, String paymentMethod);
+    
+    /**
+     * Update order tracking with tracking number and estimated delivery
+     * @param orderId Order ID
+     * @param trackingNumber Tracking number
+     * @param estimatedDelivery Estimated delivery date
+     * @return Updated order
+     */
+    Map<String, Object> updateOrderTracking(String orderId, String trackingNumber, Object estimatedDelivery);
+    
+    /**
+     * Update order delivery with tracking number and estimated delivery
+     * @param orderId Order ID
+     * @param trackingNumber Tracking number
+     * @param estimatedDelivery Estimated delivery date
+     * @return Updated order
+     */
+    Map<String, Object> updateOrderDelivery(String orderId, String trackingNumber, Object estimatedDelivery);
 }
