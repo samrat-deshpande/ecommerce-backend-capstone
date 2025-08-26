@@ -1,121 +1,133 @@
 package com.backend.ecommerce.service.impl;
 
+import com.backend.ecommerce.dto.PasswordChangeDto;
+import com.backend.ecommerce.dto.UserLoginDto;
+import com.backend.ecommerce.dto.UserProfileDto;
+import com.backend.ecommerce.dto.UserRegistrationDto;
+import com.backend.ecommerce.entity.PasswordResetToken;
 import com.backend.ecommerce.entity.User;
+import com.backend.ecommerce.event.UserLoginEvent;
+import com.backend.ecommerce.event.UserRegistrationEvent;
+import com.backend.ecommerce.repository.PasswordResetTokenRepository;
 import com.backend.ecommerce.repository.UserRepository;
+import com.backend.ecommerce.service.JwtService;
+import com.backend.ecommerce.service.KafkaProducerService;
 import com.backend.ecommerce.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
- * Implementation of UserService interface
- * Provides business logic for user management operations
+ * Implementation of UserService with comprehensive user management functionality
  */
 @Service
-public class UserServiceImpl implements UserService {
-
+public class UserServiceImpl implements UserService, UserDetailsService {
+    
+    private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
+    
     @Autowired
     private UserRepository userRepository;
     
     @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+    
+    @Autowired
     private PasswordEncoder passwordEncoder;
-
+    
+    @Autowired
+    private JwtService jwtService;
+    
+    @Autowired
+    private KafkaProducerService kafkaProducerService;
+    
+    @Value("${password.reset.token.expiration:3600000}")
+    private long tokenExpiration;
+    
+    @Value("${password.reset.base-url}")
+    private String resetBaseUrl;
+    
     @Override
-    public Map<String, Object> registerUser(Map<String, String> userData) {
+    @Transactional
+    public Map<String, Object> registerUser(UserRegistrationDto userDto) {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            // Validate required fields
-            if (userData.get("email") == null || userData.get("email").trim().isEmpty()) {
-                response.put("success", false);
-                response.put("message", "Email is required");
-                return response;
-            }
-            
-            if (userData.get("password") == null || userData.get("password").trim().isEmpty()) {
-                response.put("success", false);
-                response.put("message", "Password is required");
-                return response;
-            }
-            
-            if (userData.get("firstName") == null || userData.get("firstName").trim().isEmpty()) {
-                response.put("success", false);
-                response.put("message", "First name is required");
-                return response;
-            }
-            
-            if (userData.get("lastName") == null || userData.get("lastName").trim().isEmpty()) {
-                response.put("success", false);
-                response.put("message", "Last name is required");
-                return response;
-            }
-            
             // Check if user already exists
-            if (userExistsByEmail(userData.get("email"))) {
+            if (userExistsByEmail(userDto.getEmail())) {
                 response.put("success", false);
-                response.put("message", "User with this email already exists");
-                return response;
-            }
-            
-            // Validate password strength
-            if (userData.get("password").length() < 6) {
-                response.put("success", false);
-                response.put("message", "Password must be at least 6 characters long");
+                response.put("error", "Email already registered");
                 return response;
             }
             
             // Create new user
             User user = new User();
-            user.setEmail(userData.get("email").toLowerCase().trim());
-            user.setPassword(passwordEncoder.encode(userData.get("password")));
-            user.setFirstName(userData.get("firstName").trim());
-            user.setLastName(userData.get("lastName").trim());
-            user.setPhoneNumber(userData.get("phoneNumber"));
+            user.setEmail(userDto.getEmail());
+            user.setPassword(passwordEncoder.encode(userDto.getPassword()));
+            user.setFirstName(userDto.getFirstName());
+            user.setLastName(userDto.getLastName());
+            user.setPhoneNumber(userDto.getPhoneNumber());
+            user.setRole(User.UserRole.USER);
             user.setActive(true);
             user.setEmailVerified(false);
             user.setPhoneVerified(false);
-            user.setRole(User.UserRole.USER);
             
+            // Save user
             User savedUser = userRepository.save(user);
+            
+            // Send Kafka event
+            UserRegistrationEvent event = new UserRegistrationEvent(
+                savedUser.getId(),
+                savedUser.getEmail(),
+                savedUser.getFirstName(),
+                savedUser.getLastName(),
+                savedUser.getPhoneNumber(),
+                savedUser.getRole().toString()
+            );
+            kafkaProducerService.sendUserRegistrationEvent(event);
             
             response.put("success", true);
             response.put("message", "User registered successfully");
             response.put("userId", savedUser.getId());
             response.put("email", savedUser.getEmail());
             
+            logger.info("User registered successfully: {}", savedUser.getEmail());
+            
         } catch (Exception e) {
+            logger.error("Error registering user: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "Failed to register user: " + e.getMessage());
+            response.put("error", "Registration failed: " + e.getMessage());
         }
         
         return response;
     }
-
+    
     @Override
-    public Map<String, Object> loginUser(Map<String, String> loginData) {
+    public Map<String, Object> loginUser(UserLoginDto loginDto) {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            String email = loginData.get("email");
-            String password = loginData.get("password");
-            
-            if (email == null || password == null) {
+            // Validate credentials
+            if (!validateCredentials(loginDto.getEmail(), loginDto.getPassword())) {
                 response.put("success", false);
-                response.put("message", "Email and password are required");
+                response.put("error", "Invalid credentials");
                 return response;
             }
             
-            // Find user by email
-            Optional<User> userOpt = userRepository.findByEmail(email.toLowerCase().trim());
+            // Get user
+            Optional<User> userOpt = getUserByEmail(loginDto.getEmail());
             if (userOpt.isEmpty()) {
                 response.put("success", false);
-                response.put("message", "Invalid email or password");
+                response.put("error", "User not found");
                 return response;
             }
             
@@ -124,279 +136,429 @@ public class UserServiceImpl implements UserService {
             // Check if user is active
             if (!user.isActive()) {
                 response.put("success", false);
-                response.put("message", "Account is deactivated. Please contact support.");
-                return response;
-            }
-            
-            // Validate password
-            if (!passwordEncoder.matches(password, user.getPassword())) {
-                response.put("success", false);
-                response.put("message", "Invalid email or password");
+                response.put("error", "Account is deactivated");
                 return response;
             }
             
             // Update last login
-            user.setLastLogin(LocalDateTime.now());
-            userRepository.save(user);
+            updateLastLogin(user.getId());
             
-            // Generate simple token (in production, use JWT)
-            String token = UUID.randomUUID().toString();
+            // Generate JWT token
+            UserDetails userDetails = loadUserByUsername(user.getEmail());
+            Map<String, Object> extraClaims = new HashMap<>();
+            extraClaims.put("userId", user.getId());
+            extraClaims.put("role", user.getRole().toString());
+            
+            String token = jwtService.generateToken(extraClaims, userDetails);
+            
+            // Send Kafka event
+            UserLoginEvent event = new UserLoginEvent(
+                user.getId(),
+                user.getEmail(),
+                "EMAIL_PASSWORD",
+                "Web Client",
+                "127.0.0.1",
+                true
+            );
+            kafkaProducerService.sendUserLoginEvent(event);
             
             response.put("success", true);
             response.put("message", "Login successful");
             response.put("token", token);
-            response.put("user", Map.of(
-                "id", user.getId(),
-                "email", user.getEmail(),
-                "firstName", user.getFirstName(),
-                "lastName", user.getLastName(),
-                "role", user.getRole().toString(),
-                "emailVerified", user.isEmailVerified(),
-                "phoneVerified", user.isPhoneVerified()
-            ));
+            response.put("user", createUserMap(user));
+            
+            logger.info("User logged in successfully: {}", user.getEmail());
             
         } catch (Exception e) {
+            logger.error("Error during login: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "Login failed: " + e.getMessage());
+            response.put("error", "Login failed: " + e.getMessage());
         }
         
         return response;
     }
-
+    
     @Override
-    public Optional<Map<String, Object>> getUserProfile(String userId) {
-        try {
-            Optional<User> userOpt = userRepository.findById(userId);
-            if (userOpt.isEmpty()) {
-                return Optional.empty();
-            }
-            
-            User user = userOpt.get();
-            Map<String, Object> userProfile = new HashMap<>();
-            userProfile.put("id", user.getId());
-            userProfile.put("email", user.getEmail());
-            userProfile.put("firstName", user.getFirstName());
-            userProfile.put("lastName", user.getLastName());
-            userProfile.put("phoneNumber", user.getPhoneNumber());
-            userProfile.put("role", user.getRole().toString());
-            userProfile.put("active", user.isActive());
-            userProfile.put("emailVerified", user.isEmailVerified());
-            userProfile.put("phoneVerified", user.isPhoneVerified());
-            userProfile.put("createdAt", user.getCreatedAt());
-            userProfile.put("updatedAt", user.getUpdatedAt());
-            userProfile.put("lastLogin", user.getLastLogin());
-            
-            return Optional.of(userProfile);
-        } catch (Exception e) {
-            return Optional.empty();
-        }
-    }
-
-    @Override
-    public Map<String, Object> updateUserProfile(String userId, Map<String, String> userData) {
+    public Map<String, Object> getUserProfile(String userId) {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            Optional<User> userOpt = userRepository.findById(userId);
+            Optional<User> userOpt = getUserById(userId);
             if (userOpt.isEmpty()) {
                 response.put("success", false);
-                response.put("message", "User not found");
+                response.put("error", "User not found");
+                return response;
+            }
+            
+            User user = userOpt.get();
+            response.put("success", true);
+            response.put("user", createUserMap(user));
+            
+        } catch (Exception e) {
+            logger.error("Error getting user profile: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("error", "Failed to get profile: " + e.getMessage());
+        }
+        
+        return response;
+    }
+    
+    @Override
+    @Transactional
+    public Map<String, Object> updateUserProfile(String userId, UserProfileDto profileDto) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            Optional<User> userOpt = getUserById(userId);
+            if (userOpt.isEmpty()) {
+                response.put("success", false);
+                response.put("error", "User not found");
                 return response;
             }
             
             User user = userOpt.get();
             
-            // Update allowed fields
-            if (userData.get("firstName") != null && !userData.get("firstName").trim().isEmpty()) {
-                user.setFirstName(userData.get("firstName").trim());
+            // Update fields if provided
+            if (profileDto.getFirstName() != null) {
+                user.setFirstName(profileDto.getFirstName());
+            }
+            if (profileDto.getLastName() != null) {
+                user.setLastName(profileDto.getLastName());
+            }
+            if (profileDto.getPhoneNumber() != null) {
+                user.setPhoneNumber(profileDto.getPhoneNumber());
             }
             
-            if (userData.get("lastName") != null && !userData.get("lastName").trim().isEmpty()) {
-                user.setLastName(userData.get("lastName").trim());
-            }
-            
-            if (userData.get("phoneNumber") != null) {
-                user.setPhoneNumber(userData.get("phoneNumber").trim());
-            }
-            
+            // Save updated user
             userRepository.save(user);
             
             response.put("success", true);
-            response.put("message", "User profile updated successfully");
+            response.put("message", "Profile updated successfully");
+            response.put("user", createUserMap(user));
+            
+            logger.info("User profile updated: {}", user.getEmail());
             
         } catch (Exception e) {
+            logger.error("Error updating user profile: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "Failed to update user profile: " + e.getMessage());
+            response.put("error", "Failed to update profile: " + e.getMessage());
         }
         
         return response;
     }
-
+    
     @Override
+    @Transactional
     public Map<String, Object> deleteUser(String userId) {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            Optional<User> userOpt = userRepository.findById(userId);
+            Optional<User> userOpt = getUserById(userId);
             if (userOpt.isEmpty()) {
                 response.put("success", false);
-                response.put("message", "User not found");
+                response.put("error", "User not found");
                 return response;
             }
             
             User user = userOpt.get();
             
-            // Soft delete - mark as inactive
-            user.setActive(false);
-            userRepository.save(user);
+            // Delete password reset tokens
+            passwordResetTokenRepository.deleteAllTokensForUser(userId);
+            
+            // Delete user
+            userRepository.delete(user);
             
             response.put("success", true);
-            response.put("message", "User account deleted successfully");
+            response.put("message", "Account deleted successfully");
+            
+            logger.info("User account deleted: {}", user.getEmail());
             
         } catch (Exception e) {
+            logger.error("Error deleting user: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "Failed to delete user account: " + e.getMessage());
+            response.put("error", "Failed to delete account: " + e.getMessage());
         }
         
         return response;
     }
-
+    
     @Override
     public boolean userExistsByEmail(String email) {
-        return userRepository.existsByEmail(email.toLowerCase().trim());
-    }
-
-    @Override
-    public boolean validateCredentials(String email, String password) {
-        try {
-            Optional<User> userOpt = userRepository.findByEmail(email.toLowerCase().trim());
-            if (userOpt.isEmpty()) {
-                return false;
-            }
-            
-            User user = userOpt.get();
-            return user.isActive() && passwordEncoder.matches(password, user.getPassword());
-        } catch (Exception e) {
-            return false;
-        }
+        return userRepository.findByEmail(email).isPresent();
     }
     
-    /**
-     * Request password reset
-     * @param email User's email
-     * @return Response with reset status
-     */
+    @Override
+    public boolean validateCredentials(String email, String password) {
+        Optional<User> userOpt = getUserByEmail(email);
+        if (userOpt.isEmpty()) {
+            return false;
+        }
+        
+        User user = userOpt.get();
+        return passwordEncoder.matches(password, user.getPassword());
+    }
+    
+    @Override
+    @Transactional
     public Map<String, Object> requestPasswordReset(String email) {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            Optional<User> userOpt = userRepository.findByEmail(email.toLowerCase().trim());
+            Optional<User> userOpt = getUserByEmail(email);
             if (userOpt.isEmpty()) {
                 response.put("success", false);
-                response.put("message", "If an account with this email exists, a reset link will be sent");
+                response.put("error", "User not found");
                 return response;
             }
             
             User user = userOpt.get();
-            if (!user.isActive()) {
-                response.put("success", false);
-                response.put("message", "Account is deactivated");
-                return response;
-            }
             
-            // Generate reset token (in production, store this securely and set expiration)
-            String resetToken = UUID.randomUUID().toString();
+            // Generate reset token
+            String token = UUID.randomUUID().toString();
+            LocalDateTime expiryDate = LocalDateTime.now().plusSeconds(tokenExpiration / 1000);
+            
+            // Save token
+            PasswordResetToken resetToken = new PasswordResetToken(token, user.getId(), expiryDate);
+            passwordResetTokenRepository.save(resetToken);
             
             // TODO: Send email with reset link
-            // For now, just return success message
+            String resetLink = resetBaseUrl + "?token=" + token;
+            logger.info("Password reset link generated for {}: {}", user.getEmail(), resetLink);
             
             response.put("success", true);
-            response.put("message", "Password reset link has been sent to your email");
+            response.put("message", "Password reset email sent");
+            response.put("resetLink", resetLink); // In production, remove this and send via email
             
         } catch (Exception e) {
+            logger.error("Error requesting password reset: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "Failed to process password reset request: " + e.getMessage());
+            response.put("error", "Failed to request password reset: " + e.getMessage());
         }
         
         return response;
     }
     
-    /**
-     * Reset password using token
-     * @param resetToken Password reset token
-     * @param newPassword New password
-     * @return Response with reset status
-     */
-    public Map<String, Object> resetPassword(String resetToken, String newPassword) {
+    @Override
+    @Transactional
+    public Map<String, Object> resetPassword(String token, String newPassword) {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            if (newPassword == null || newPassword.length() < 6) {
+            Optional<PasswordResetToken> tokenOpt = passwordResetTokenRepository.findByToken(token);
+            if (tokenOpt.isEmpty()) {
                 response.put("success", false);
-                response.put("message", "Password must be at least 6 characters long");
+                response.put("error", "Invalid reset token");
                 return response;
             }
             
-            // TODO: Validate reset token and find user
-            // For now, return success message
+            PasswordResetToken resetToken = tokenOpt.get();
             
-            response.put("success", true);
-            response.put("message", "Password has been reset successfully");
+            // Check if token is valid
+            if (!resetToken.isValid()) {
+                response.put("success", false);
+                response.put("error", "Token expired or already used");
+                return response;
+            }
             
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Failed to reset password: " + e.getMessage());
-        }
-        
-        return response;
-    }
-    
-    /**
-     * Change password for authenticated user
-     * @param userId User ID
-     * @param currentPassword Current password
-     * @param newPassword New password
-     * @return Response with change status
-     */
-    public Map<String, Object> changePassword(String userId, String currentPassword, String newPassword) {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            Optional<User> userOpt = userRepository.findById(userId);
+            // Get user
+            Optional<User> userOpt = getUserById(resetToken.getUserId());
             if (userOpt.isEmpty()) {
                 response.put("success", false);
-                response.put("message", "User not found");
+                response.put("error", "User not found");
                 return response;
             }
             
             User user = userOpt.get();
-            
-            // Validate current password
-            if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
-                response.put("success", false);
-                response.put("message", "Current password is incorrect");
-                return response;
-            }
-            
-            // Validate new password
-            if (newPassword == null || newPassword.length() < 6) {
-                response.put("success", false);
-                response.put("message", "New password must be at least 6 characters long");
-                return response;
-            }
             
             // Update password
             user.setPassword(passwordEncoder.encode(newPassword));
             userRepository.save(user);
             
+            // Mark token as used
+            passwordResetTokenRepository.markTokenAsUsed(resetToken.getId());
+            
             response.put("success", true);
-            response.put("message", "Password changed successfully");
+            response.put("message", "Password reset successfully");
+            
+            logger.info("Password reset successfully for user: {}", user.getEmail());
             
         } catch (Exception e) {
+            logger.error("Error resetting password: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "Failed to change password: " + e.getMessage());
+            response.put("error", "Failed to reset password: " + e.getMessage());
         }
         
         return response;
+    }
+    
+    @Override
+    @Transactional
+    public Map<String, Object> changePassword(String userId, PasswordChangeDto passwordChangeDto) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            // Validate password confirmation
+            if (!passwordChangeDto.isPasswordMatching()) {
+                response.put("success", false);
+                response.put("error", "New password and confirmation do not match");
+                return response;
+            }
+            
+            Optional<User> userOpt = getUserById(userId);
+            if (userOpt.isEmpty()) {
+                response.put("success", false);
+                response.put("error", "User not found");
+                return response;
+            }
+            
+            User user = userOpt.get();
+            
+            // Verify current password
+            if (!passwordEncoder.matches(passwordChangeDto.getCurrentPassword(), user.getPassword())) {
+                response.put("success", false);
+                response.put("error", "Current password is incorrect");
+                return response;
+            }
+            
+            // Update password
+            user.setPassword(passwordEncoder.encode(passwordChangeDto.getNewPassword()));
+            userRepository.save(user);
+            
+            response.put("success", true);
+            response.put("message", "Password changed successfully");
+            
+            logger.info("Password changed successfully for user: {}", user.getEmail());
+            
+        } catch (Exception e) {
+            logger.error("Error changing password: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("error", "Failed to change password: " + e.getMessage());
+        }
+        
+        return response;
+    }
+    
+    @Override
+    public Map<String, Object> checkEmailExists(String email) {
+        Map<String, Object> response = new HashMap<>();
+        
+        boolean exists = userExistsByEmail(email);
+        
+        response.put("success", true);
+        response.put("available", !exists);
+        response.put("message", exists ? "Email already exists" : "Email is available");
+        
+        return response;
+    }
+    
+    @Override
+    public Map<String, Object> getUserStats(String userId) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            Optional<User> userOpt = getUserById(userId);
+            if (userOpt.isEmpty()) {
+                response.put("success", false);
+                response.put("error", "User not found");
+                return response;
+            }
+            
+            User user = userOpt.get();
+            
+            // TODO: Implement actual statistics from other services
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("memberSince", user.getCreatedAt());
+            stats.put("lastLogin", user.getLastLogin());
+            stats.put("emailVerified", user.isEmailVerified());
+            stats.put("phoneVerified", user.isPhoneVerified());
+            
+            response.put("success", true);
+            response.put("stats", stats);
+            
+        } catch (Exception e) {
+            logger.error("Error getting user stats: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("error", "Failed to get statistics: " + e.getMessage());
+        }
+        
+        return response;
+    }
+    
+    @Override
+    public Map<String, Object> verifyEmail(String token) {
+        // TODO: Implement email verification
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", false);
+        response.put("error", "Email verification not implemented yet");
+        return response;
+    }
+    
+    @Override
+    public Map<String, Object> resendEmailVerification(String email) {
+        // TODO: Implement email verification resend
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", false);
+        response.put("error", "Email verification not implemented yet");
+        return response;
+    }
+    
+    @Override
+    @Transactional
+    public void updateLastLogin(String userId) {
+        Optional<User> userOpt = getUserById(userId);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            user.setLastLogin(LocalDateTime.now());
+            userRepository.save(user);
+        }
+    }
+    
+    @Override
+    public Optional<User> getUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+    
+    @Override
+    public Optional<User> getUserById(String userId) {
+        return userRepository.findById(userId);
+    }
+    
+    // UserDetailsService implementation
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        Optional<User> userOpt = getUserByEmail(email);
+        if (userOpt.isEmpty()) {
+            throw new UsernameNotFoundException("User not found with email: " + email);
+        }
+        
+        User user = userOpt.get();
+        
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(user.getEmail())
+                .password(user.getPassword())
+                .roles(user.getRole().toString())
+                .disabled(!user.isActive())
+                .accountExpired(false)
+                .credentialsExpired(false)
+                .accountLocked(false)
+                .build();
+    }
+    
+    // Helper methods
+    private Map<String, Object> createUserMap(User user) {
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("id", user.getId());
+        userMap.put("email", user.getEmail());
+        userMap.put("firstName", user.getFirstName());
+        userMap.put("lastName", user.getLastName());
+        userMap.put("phoneNumber", user.getPhoneNumber());
+        userMap.put("role", user.getRole().toString());
+        userMap.put("active", user.isActive());
+        userMap.put("emailVerified", user.isEmailVerified());
+        userMap.put("phoneVerified", user.isPhoneVerified());
+        userMap.put("createdAt", user.getCreatedAt());
+        userMap.put("lastLogin", user.getLastLogin());
+        
+        return userMap;
     }
 }

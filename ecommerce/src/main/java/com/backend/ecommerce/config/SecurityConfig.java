@@ -37,17 +37,35 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable) // Disable CSRF for API endpoints
             .authorizeHttpRequests(authz -> authz
-                // Public endpoints
+                // Public endpoints for development
+                .requestMatchers("/").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/api/users/register").permitAll()
                 .requestMatchers("/api/users/login").permitAll()
                 .requestMatchers("/api/users/forgot-password").permitAll()
                 .requestMatchers("/api/users/reset-password").permitAll()
                 .requestMatchers("/api/users/check-email").permitAll()
                 .requestMatchers("/api/catalog/**").permitAll()
+                .requestMatchers("/api/products/**").permitAll()
+                .requestMatchers("/api/categories/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll() // H2 console for development
                 .requestMatchers("/error").permitAll()
+                
+                // Swagger/OpenAPI endpoints
+                .requestMatchers("/swagger-ui/**").permitAll()
+                .requestMatchers("/swagger-ui.html").permitAll()
+                .requestMatchers("/v3/api-docs/**").permitAll()
+                .requestMatchers("/v3/api-docs.yaml").permitAll()
+                
+                // Development endpoints (can be restricted in production)
+                .requestMatchers("/api/test/**").permitAll()
+                .requestMatchers("/api/health/**").permitAll()
+                
                 // Protected endpoints - require authentication
                 .requestMatchers("/api/users/**").authenticated()
+                .requestMatchers("/api/cart/**").authenticated()
+                .requestMatchers("/api/orders/**").authenticated()
+                .requestMatchers("/api/payments/**").authenticated()
                 .anyRequest().authenticated()
             )
             .headers(headers -> headers.frameOptions().disable()) // Allow H2 console frames

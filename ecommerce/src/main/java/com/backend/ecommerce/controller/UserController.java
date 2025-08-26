@@ -1,5 +1,8 @@
 package com.backend.ecommerce.controller;
 
+import com.backend.ecommerce.dto.PasswordChangeDto;
+import com.backend.ecommerce.dto.UserLoginDto;
+import com.backend.ecommerce.dto.UserProfileDto;
 import com.backend.ecommerce.dto.UserRegistrationDto;
 import com.backend.ecommerce.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -60,7 +64,7 @@ public class UserController {
             )
         )
     })
-    public ResponseEntity<Map<String, Object>> registerUser(@RequestBody UserRegistrationDto userDto) {
+    public ResponseEntity<Map<String, Object>> registerUser(@Valid @RequestBody UserRegistrationDto userDto) {
         Map<String, Object> response = userService.registerUser(userDto);
         
         if ((Boolean) response.get("success")) {
@@ -100,13 +104,8 @@ public class UserController {
             )
         )
     })
-    public ResponseEntity<Map<String, Object>> loginUser(
-            @Parameter(description = "User email", example = "user@example.com")
-            @RequestParam String email,
-            @Parameter(description = "User password", example = "password123")
-            @RequestParam String password) {
-        
-        Map<String, Object> response = userService.loginUser(email, password);
+    public ResponseEntity<Map<String, Object>> loginUser(@Valid @RequestBody UserLoginDto loginDto) {
+        Map<String, Object> response = userService.loginUser(loginDto);
         
         if ((Boolean) response.get("success")) {
             return ResponseEntity.ok(response);
@@ -118,10 +117,10 @@ public class UserController {
     /**
      * Get user profile
      */
-    @GetMapping("/profile")
+    @GetMapping("/profile/{userId}")
     @Operation(
         summary = "Get user profile",
-        description = "Retrieves the profile information for the authenticated user"
+        description = "Retrieves the profile information for the specified user"
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -141,7 +140,7 @@ public class UserController {
     })
     public ResponseEntity<Map<String, Object>> getUserProfile(
             @Parameter(description = "User ID", example = "uuid-here")
-            @RequestParam String userId) {
+            @PathVariable String userId) {
         
         Map<String, Object> response = userService.getUserProfile(userId);
         
@@ -155,10 +154,10 @@ public class UserController {
     /**
      * Update user profile
      */
-    @PutMapping("/profile")
+    @PutMapping("/profile/{userId}")
     @Operation(
         summary = "Update user profile",
-        description = "Updates the profile information for the authenticated user"
+        description = "Updates the profile information for the specified user"
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -184,10 +183,10 @@ public class UserController {
     })
     public ResponseEntity<Map<String, Object>> updateUserProfile(
             @Parameter(description = "User ID", example = "uuid-here")
-            @RequestParam String userId,
-            @RequestBody Map<String, Object> profileData) {
+            @PathVariable String userId,
+            @Valid @RequestBody UserProfileDto profileDto) {
         
-        Map<String, Object> response = userService.updateUserProfile(userId, profileData);
+        Map<String, Object> response = userService.updateUserProfile(userId, profileDto);
         
         if ((Boolean) response.get("success")) {
             return ResponseEntity.ok(response);
@@ -199,7 +198,7 @@ public class UserController {
     /**
      * Delete user account
      */
-    @DeleteMapping("/profile")
+    @DeleteMapping("/profile/{userId}")
     @Operation(
         summary = "Delete user account",
         description = "Permanently deletes the user account and all associated data"
@@ -222,7 +221,7 @@ public class UserController {
     })
     public ResponseEntity<Map<String, Object>> deleteUser(
             @Parameter(description = "User ID", example = "uuid-here")
-            @RequestParam String userId) {
+            @PathVariable String userId) {
         
         Map<String, Object> response = userService.deleteUser(userId);
         
@@ -318,7 +317,7 @@ public class UserController {
     /**
      * Change password
      */
-    @PostMapping("/password/change")
+    @PostMapping("/password/change/{userId}")
     @Operation(
         summary = "Change password",
         description = "Changes the user's password (requires current password verification)"
@@ -347,13 +346,10 @@ public class UserController {
     })
     public ResponseEntity<Map<String, Object>> changePassword(
             @Parameter(description = "User ID", example = "uuid-here")
-            @RequestParam String userId,
-            @Parameter(description = "Current password", example = "currentpassword")
-            @RequestParam String currentPassword,
-            @Parameter(description = "New password", example = "newpassword123")
-            @RequestParam String newPassword) {
+            @PathVariable String userId,
+            @Valid @RequestBody PasswordChangeDto passwordChangeDto) {
         
-        Map<String, Object> response = userService.changePassword(userId, currentPassword, newPassword);
+        Map<String, Object> response = userService.changePassword(userId, passwordChangeDto);
         
         if ((Boolean) response.get("success")) {
             return ResponseEntity.ok(response);
@@ -393,7 +389,7 @@ public class UserController {
     /**
      * Get user statistics
      */
-    @GetMapping("/stats")
+    @GetMapping("/stats/{userId}")
     @Operation(
         summary = "Get user statistics",
         description = "Retrieves statistics about the user's account and activities"
@@ -405,16 +401,90 @@ public class UserController {
             content = @Content(
                 mediaType = "application/json",
                 examples = @ExampleObject(
-                    value = "{\"success\": true, \"totalOrders\": 5, \"totalSpent\": 299.99, \"memberSince\": \"2024-01-15\"}"
+                    value = "{\"success\": true, \"stats\": {\"memberSince\": \"2024-01-15\", \"lastLogin\": \"2024-01-20\"}}"
                 )
             )
         )
     })
     public ResponseEntity<Map<String, Object>> getUserStats(
             @Parameter(description = "User ID", example = "uuid-here")
-            @RequestParam String userId) {
+            @PathVariable String userId) {
         
         Map<String, Object> response = userService.getUserStats(userId);
         return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Verify email address
+     */
+    @PostMapping("/verify-email")
+    @Operation(
+        summary = "Verify email address",
+        description = "Verifies the user's email address using a verification token"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Email verified successfully",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": true, \"message\": \"Email verified successfully\"}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid or expired token"
+        )
+    })
+    public ResponseEntity<Map<String, Object>> verifyEmail(
+            @Parameter(description = "Verification token", example = "verification-token-here")
+            @RequestParam String token) {
+        
+        Map<String, Object> response = userService.verifyEmail(token);
+        
+        if ((Boolean) response.get("success")) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+    
+    /**
+     * Resend email verification
+     */
+    @PostMapping("/resend-verification")
+    @Operation(
+        summary = "Resend email verification",
+        description = "Resends the email verification link to the user's email address"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Verification email resent",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"success\": true, \"message\": \"Verification email resent\"}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "User not found"
+        )
+    })
+    public ResponseEntity<Map<String, Object>> resendEmailVerification(
+            @Parameter(description = "User email", example = "user@example.com")
+            @RequestParam String email) {
+        
+        Map<String, Object> response = userService.resendEmailVerification(email);
+        
+        if ((Boolean) response.get("success")) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

@@ -261,6 +261,31 @@ public class OrderServiceImpl implements OrderService {
         response.put("success", true);
         return response;
     }
+    
+    @Override
+    public Map<String, Object> updateOrderPaymentStatus(String orderId, String paymentStatus, String userId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        
+        // Verify user authorization
+        if (!order.getUserId().equals(userId)) {
+            throw new RuntimeException("Unauthorized to update this order");
+        }
+        
+        // Update payment status
+        Order.PaymentStatus newPaymentStatus = Order.PaymentStatus.valueOf(paymentStatus.toUpperCase());
+        order.setPaymentStatus(newPaymentStatus);
+        order.setUpdatedAt(LocalDateTime.now());
+        
+        Order savedOrder = orderRepository.save(order);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("orderId", orderId);
+        response.put("paymentStatus", newPaymentStatus.toString());
+        response.put("message", "Order payment status updated successfully");
+        return response;
+    }
 
     @Override
     public Map<String, Object> getOrderConfirmation(String orderId, String userId) {

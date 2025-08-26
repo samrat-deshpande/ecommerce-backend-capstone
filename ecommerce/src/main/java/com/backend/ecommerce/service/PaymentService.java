@@ -1,5 +1,6 @@
 package com.backend.ecommerce.service;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 /**
@@ -11,37 +12,30 @@ public interface PaymentService {
      * Process payment for an order
      * @param orderId Order ID
      * @param userId User ID
-     * @param paymentData Payment information including method and details
-     * @return Response with payment processing result
+     * @param amount Payment amount
+     * @param paymentMethod Payment method
+     * @param paymentData Additional payment data (card details, etc.)
+     * @return Response with payment details
      */
-    Map<String, Object> processPayment(String orderId, String userId, Map<String, Object> paymentData);
+    Map<String, Object> processPayment(String orderId, String userId, BigDecimal amount, String paymentMethod, Map<String, Object> paymentData);
     
     /**
-     * Process credit card payment
+     * Verify payment transaction
+     * @param transactionId Transaction ID
      * @param orderId Order ID
-     * @param userId User ID
-     * @param cardData Credit card information
-     * @return Response with payment processing result
+     * @return Payment verification result
      */
-    Map<String, Object> processCreditCardPayment(String orderId, String userId, Map<String, Object> cardData);
+    Map<String, Object> verifyPayment(String transactionId, String orderId);
     
     /**
-     * Process digital wallet payment
+     * Process refund for a payment
+     * @param paymentId Payment ID
      * @param orderId Order ID
-     * @param userId User ID
-     * @param walletData Digital wallet information
-     * @return Response with payment processing result
+     * @param amount Refund amount
+     * @param reason Refund reason
+     * @return Refund result
      */
-    Map<String, Object> processDigitalWalletPayment(String orderId, String userId, Map<String, Object> walletData);
-    
-    /**
-     * Process bank transfer payment
-     * @param orderId Order ID
-     * @param userId User ID
-     * @param bankData Bank transfer information
-     * @return Response with payment processing result
-     */
-    Map<String, Object> processBankTransferPayment(String orderId, String userId, Map<String, Object> bankData);
+    Map<String, Object> processRefund(String paymentId, String orderId, BigDecimal amount, String reason);
     
     /**
      * Get payment details by ID
@@ -52,161 +46,40 @@ public interface PaymentService {
     Map<String, Object> getPaymentById(String paymentId, String userId);
     
     /**
-     * Get payment by transaction ID
-     * @param transactionId Transaction ID
+     * Get payment details by order ID
+     * @param orderId Order ID
+     * @param userId User ID (for authorization)
      * @return Payment details
      */
-    Map<String, Object> getPaymentByTransactionId(String transactionId);
+    Map<String, Object> getPaymentByOrderId(String orderId, String userId);
     
     /**
-     * Get payment history for user
+     * Get payment history for a user
      * @param userId User ID
      * @param page Page number
      * @param size Page size
-     * @return Paginated list of payments
+     * @return Paginated payment history
      */
     Map<String, Object> getUserPaymentHistory(String userId, int page, int size);
     
     /**
-     * Get payment history for user
-     * @param userId User ID
-     * @return List of user's payments
-     */
-    Map<String, Object> getUserPaymentHistory(String userId);
-    
-    /**
-     * Get payments by status
-     * @param userId User ID
-     * @param status Payment status
-     * @return List of payments with specified status
-     */
-    Map<String, Object> getPaymentsByStatus(String userId, String status);
-    
-    /**
-     * Get payments by payment method
-     * @param userId User ID
-     * @param paymentMethod Payment method
-     * @return List of payments with specified method
-     */
-    Map<String, Object> getPaymentsByMethod(String userId, String paymentMethod);
-    
-    /**
-     * Refund payment
+     * Update payment status
      * @param paymentId Payment ID
+     * @param status New status
      * @param userId User ID (for authorization)
-     * @param refundData Refund details
-     * @return Response with refund result
+     * @return Updated payment details
      */
-    Map<String, Object> refundPayment(String paymentId, String userId, Map<String, Object> refundData);
+    Map<String, Object> updatePaymentStatus(String paymentId, String status, String userId);
     
     /**
-     * Partial refund payment
-     * @param paymentId Payment ID
-     * @param userId User ID (for authorization)
-     * @param amount Refund amount
-     * @param reason Refund reason
-     * @return Response with partial refund result
-     */
-    Map<String, Object> partialRefundPayment(String paymentId, String userId, Double amount, String reason);
-    
-    /**
-     * Cancel payment
-     * @param paymentId Payment ID
-     * @param userId User ID (for authorization)
-     * @param reason Cancellation reason
-     * @return Response with cancellation result
-     */
-    Map<String, Object> cancelPayment(String paymentId, String userId, String reason);
-    
-    /**
-     * Validate payment method
-     * @param paymentMethod Payment method
-     * @param paymentData Payment data to validate
-     * @return Validation result
-     */
-    Map<String, Object> validatePaymentMethod(String paymentMethod, Map<String, Object> paymentData);
-    
-    /**
-     * Validate credit card
-     * @param cardData Credit card information
-     * @return Validation result
-     */
-    Map<String, Object> validateCreditCard(Map<String, Object> cardData);
-    
-    /**
-     * Get payment receipt
-     * @param paymentId Payment ID
-     * @param userId User ID (for authorization)
-     * @return Payment receipt details
-     */
-    Map<String, Object> getPaymentReceipt(String paymentId, String userId);
-    
-    /**
-     * Resend payment receipt
-     * @param paymentId Payment ID
-     * @param userId User ID (for authorization)
-     * @return Response with email status
-     */
-    Map<String, Object> resendPaymentReceipt(String paymentId, String userId);
-    
-    /**
-     * Get payment statistics for user
-     * @param userId User ID
-     * @return Payment statistics
-     */
-    Map<String, Object> getUserPaymentStats(String userId);
-    
-    /**
-     * Get payment details for admin (with full information)
-     * @param paymentId Payment ID
-     * @return Complete payment details
-     */
-    Map<String, Object> getPaymentForAdmin(String paymentId);
-    
-    /**
-     * Get all payments with filtering and pagination (admin)
-     * @param page Page number
-     * @param size Page size
-     * @param status Payment status filter
-     * @param userId User ID filter
-     * @param paymentMethod Payment method filter
-     * @param startDate Start date filter
-     * @param endDate End date filter
-     * @return Paginated list of payments
-     */
-    Map<String, Object> getAllPayments(int page, int size, String status, String userId, String paymentMethod, String startDate, String endDate);
-    
-    /**
-     * Retry failed payment
-     * @param paymentId Payment ID
-     * @param userId User ID (for authorization)
-     * @return Response with retry result
-     */
-    Map<String, Object> retryFailedPayment(String paymentId, String userId);
-    
-    /**
-     * Get available payment methods
-     * @return List of available payment methods
-     */
-    Map<String, Object> getAvailablePaymentMethods();
-    
-    /**
-     * Check payment gateway status
+     * Get payment gateway status
      * @return Gateway status information
      */
-    Map<String, Object> checkPaymentGatewayStatus();
+    Map<String, Object> getGatewayStatus();
     
     /**
-     * Generate payment transaction ID
-     * @return Unique transaction ID
+     * Test payment gateway connectivity
+     * @return Connectivity test result
      */
-    String generateTransactionId();
-    
-    /**
-     * Calculate payment fees
-     * @param amount Payment amount
-     * @param paymentMethod Payment method
-     * @return Calculated fees
-     */
-    Map<String, Object> calculatePaymentFees(Double amount, String paymentMethod);
+    Map<String, Object> testGatewayConnectivity();
 }

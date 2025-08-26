@@ -375,6 +375,13 @@ public class DataLoader {
         order.setDeliveryPhone(user.getPhoneNumber());
         order.setEstimatedDeliveryDate(LocalDateTime.now().plusDays(5));
         order.setTrackingNumber("TRK" + orderNumber.replace("ORD-", ""));
+        
+        // Set default values for required fields to avoid NULL constraint violations
+        order.setSubtotal(BigDecimal.ZERO);
+        order.setTaxAmount(BigDecimal.ZERO);
+        order.setTotalAmount(BigDecimal.ZERO);
+        order.setShippingAmount(BigDecimal.ZERO);
+        
         return order;
     }
 

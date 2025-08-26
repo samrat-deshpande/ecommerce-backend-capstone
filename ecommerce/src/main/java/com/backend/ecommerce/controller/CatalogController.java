@@ -17,7 +17,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * REST Controller for managing product catalog operations
@@ -73,7 +75,7 @@ public class CatalogController {
         Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
         
-        Map<String, Object> response = catalogService.getProducts(pageable, categoryId, searchTerm, minPrice, maxPrice);
+        Map<String, Object> response = catalogService.getProducts(page, size, categoryId, searchTerm, minPrice != null ? minPrice.doubleValue() : null, maxPrice != null ? maxPrice.doubleValue() : null);
         
         if ((Boolean) response.get("success")) {
             return ResponseEntity.ok(response);
@@ -110,9 +112,10 @@ public class CatalogController {
             @Parameter(description = "Product ID", example = "product-uuid")
             @PathVariable String productId) {
         
-        Map<String, Object> response = catalogService.getProductById(productId);
+        Optional<Map<String, Object>> productOptional = catalogService.getProductById(productId);
         
-        if ((Boolean) response.get("success")) {
+        if (productOptional.isPresent()) {
+            Map<String, Object> response = productOptional.get();
             return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.notFound().build();
@@ -140,7 +143,8 @@ public class CatalogController {
         )
     })
     public ResponseEntity<Map<String, Object>> getCategories() {
-        Map<String, Object> response = catalogService.getCategories();
+        List<Map<String, Object>> categories = catalogService.getCategories();
+        Map<String, Object> response = Map.of("success", true, "categories", categories);
         return ResponseEntity.ok(response);
     }
 
@@ -172,8 +176,7 @@ public class CatalogController {
             @Parameter(description = "Page size", example = "20")
             @RequestParam(defaultValue = "20") int size) {
         
-        Pageable pageable = PageRequest.of(page, size);
-        Map<String, Object> response = catalogService.searchProducts(query, pageable);
+        Map<String, Object> response = catalogService.searchProducts(query, page, size);
         return ResponseEntity.ok(response);
     }
 
@@ -209,8 +212,7 @@ public class CatalogController {
             @Parameter(description = "Page size", example = "20")
             @RequestParam(defaultValue = "20") int size) {
         
-        Pageable pageable = PageRequest.of(page, size);
-        Map<String, Object> response = catalogService.getProductsByCategory(categoryId, pageable);
+        Map<String, Object> response = catalogService.getProductsByCategory(categoryId, page, size);
         
         if ((Boolean) response.get("success")) {
             return ResponseEntity.ok(response);
@@ -410,186 +412,13 @@ public class CatalogController {
         }
     }
 
-    /**
-     * Get products by price range
-     */
-    @GetMapping("/products/price-range")
-    @Operation(
-        summary = "Get products by price range",
-        description = "Retrieves products within a specified price range"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Products retrieved successfully",
-            content = @Content(
-                mediaType = "application/json",
-                examples = @ExampleObject(
-                    value = "{\"success\": true, \"products\": [...], \"totalProducts\": 25}"
-                )
-            )
-        )
-    })
-    public ResponseEntity<Map<String, Object>> getProductsByPriceRange(
-            @Parameter(description = "Minimum price", example = "50.00")
-            @RequestParam BigDecimal minPrice,
-            @Parameter(description = "Maximum price", example = "200.00")
-            @RequestParam BigDecimal maxPrice,
-            @Parameter(description = "Page number (0-based)", example = "0")
-            @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size", example = "20")
-            @RequestParam(defaultValue = "20") int size) {
-        
-        Pageable pageable = PageRequest.of(page, size);
-        Map<String, Object> response = catalogService.getProductsByPriceRange(minPrice, maxPrice, pageable);
-        return ResponseEntity.ok(response);
-    }
 
-    /**
-     * Get products with low stock
-     */
-    @GetMapping("/products/low-stock")
-    @Operation(
-        summary = "Get products with low stock",
-        description = "Retrieves products that have stock below a specified threshold (Admin only)"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Low stock products retrieved successfully",
-            content = @Content(
-                mediaType = "application/json",
-                examples = @ExampleObject(
-                    value = "{\"success\": true, \"products\": [...], \"threshold\": 10}"
-                )
-            )
-        )
-    })
-    public ResponseEntity<Map<String, Object>> getProductsWithLowStock(
-            @Parameter(description = "Stock threshold", example = "10")
-            @RequestParam(defaultValue = "10") int threshold) {
-        
-        Map<String, Object> response = catalogService.getProductsWithLowStock(threshold);
-        return ResponseEntity.ok(response);
-    }
 
-    /**
-     * Get recently added products
-     */
-    @GetMapping("/products/recent")
-    @Operation(
-        summary = "Get recently added products",
-        description = "Retrieves the most recently added products to the catalog"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Recent products retrieved successfully",
-            content = @Content(
-                mediaType = "application/json",
-                examples = @ExampleObject(
-                    value = "{\"success\": true, \"products\": [...], \"totalProducts\": 10}"
-                )
-            )
-        )
-    })
-    public ResponseEntity<Map<String, Object>> getRecentlyAddedProducts(
-            @Parameter(description = "Number of products to retrieve", example = "10")
-            @RequestParam(defaultValue = "10") int limit) {
-        
-        Map<String, Object> response = catalogService.getRecentlyAddedProducts(limit);
-        return ResponseEntity.ok(response);
-    }
 
-    /**
-     * Get featured products
-     */
-    @GetMapping("/products/featured")
-    @Operation(
-        summary = "Get featured products",
-        description = "Retrieves featured products that are highlighted on the homepage"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Featured products retrieved successfully",
-            content = @Content(
-                mediaType = "application/json",
-                examples = @ExampleObject(
-                    value = "{\"success\": true, \"products\": [...], \"totalProducts\": 8}"
-                )
-            )
-        )
-    })
-    public ResponseEntity<Map<String, Object>> getFeaturedProducts(
-            @Parameter(description = "Number of featured products to retrieve", example = "8")
-            @RequestParam(defaultValue = "8") int limit) {
-        
-        Map<String, Object> response = catalogService.getFeaturedProducts(limit);
-        return ResponseEntity.ok(response);
-    }
 
-    /**
-     * Get product recommendations
-     */
-    @GetMapping("/products/{productId}/recommendations")
-    @Operation(
-        summary = "Get product recommendations",
-        description = "Retrieves product recommendations based on a specific product"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Recommendations retrieved successfully",
-            content = @Content(
-                mediaType = "application/json",
-                examples = @ExampleObject(
-                    value = "{\"success\": true, \"recommendations\": [...], \"baseProduct\": {\"id\": \"uuid\", \"name\": \"Base Product\"}}"
-                )
-            )
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Base product not found"
-        )
-    })
-    public ResponseEntity<Map<String, Object>> getProductRecommendations(
-            @Parameter(description = "Product ID for recommendations", example = "product-uuid")
-            @PathVariable String productId,
-            @Parameter(description = "Number of recommendations to retrieve", example = "5")
-            @RequestParam(defaultValue = "5") int limit) {
-        
-        Map<String, Object> response = catalogService.getProductRecommendations(productId, limit);
-        
-        if ((Boolean) response.get("success")) {
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
 
-    /**
-     * Get catalog statistics
-     */
-    @GetMapping("/stats")
-    @Operation(
-        summary = "Get catalog statistics",
-        description = "Retrieves overall statistics about the product catalog (Admin only)"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Statistics retrieved successfully",
-            content = @Content(
-                mediaType = "application/json",
-                examples = @ExampleObject(
-                    value = "{\"success\": true, \"totalProducts\": 1000, \"totalCategories\": 25, \"averagePrice\": 89.99}"
-                )
-            )
-        )
-    })
-    public ResponseEntity<Map<String, Object>> getCatalogStats() {
-        Map<String, Object> response = catalogService.getCatalogStats();
-        return ResponseEntity.ok(response);
-    }
+
+
+
+
 }

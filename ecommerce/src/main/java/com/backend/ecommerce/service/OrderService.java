@@ -98,6 +98,15 @@ public interface OrderService {
     Map<String, Object> updateOrderTracking(String orderId, Map<String, Object> trackingData, String userId);
     
     /**
+     * Update order payment status
+     * @param orderId Order ID
+     * @param paymentStatus New payment status
+     * @param userId User ID (for authorization)
+     * @return Response with updated order
+     */
+    Map<String, Object> updateOrderPaymentStatus(String orderId, String paymentStatus, String userId);
+    
+    /**
      * Get order confirmation details
      * @param orderId Order ID
      * @param userId User ID (for authorization)

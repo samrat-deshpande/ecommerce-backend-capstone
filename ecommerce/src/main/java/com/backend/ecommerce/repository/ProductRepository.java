@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -98,5 +99,27 @@ public interface ProductRepository extends JpaRepository<Product, String> {
      * @param pageable Pagination information
      * @return Page of products created after the specified date
      */
+    
+    /**
+     * Find products by category
+     * @param category Category name
+     * @return List of products in the specified category
+     */
+    List<Product> findByCategory(String category);
+    
+    /**
+     * Find products by name containing (case-insensitive)
+     * @param name Product name to search for
+     * @return List of products matching the name
+     */
+    List<Product> findByNameContainingIgnoreCase(String name);
+    
+    /**
+     * Find products by price between values
+     * @param minPrice Minimum price
+     * @param maxPrice Maximum price
+     * @return List of products within the price range
+     */
+    List<Product> findByPriceBetween(BigDecimal minPrice, BigDecimal maxPrice);
     Page<Product> findByCreatedAtAfter(LocalDateTime date, Pageable pageable);
 }
