@@ -1,0 +1,1069 @@
+{
+	"info": {
+		"_postman_id": "ecommerce-api-collection",
+		"name": "Ecommerce API Collection",
+		"description": "Complete API collection for Ecommerce Backend application including User Management, Product Catalog, Shopping Cart, Orders, and Payments",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12345678"
+	},
+	"item": [
+		{
+			"name": "🏠 Home & Health",
+			"item": [
+				{
+					"name": "Home - Welcome",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": ["{{baseUrl}}"],
+							"path": [""]
+						},
+						"description": "Get welcome message and application information"
+					},
+					"response": []
+				},
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						},
+						"description": "Check application health status"
+					},
+					"response": []
+				}
+			],
+			"description": "Basic application endpoints for health checks and welcome messages"
+		},
+		{
+			"name": "🧪 Test & Development",
+			"item": [
+				{
+					"name": "Test Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/test/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "test", "health"]
+						},
+						"description": "Test controller health check"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/test/info",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "test", "info"]
+						},
+						"description": "Get test controller information"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Kafka",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/test/kafka",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "test", "kafka"]
+						},
+						"description": "Test Kafka integration"
+					},
+					"response": []
+				}
+			],
+			"description": "Development and testing endpoints"
+		},
+		{
+			"name": "👤 User Management",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"phoneNumber\": \"+1-555-0101\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "register"]
+						},
+						"description": "Register a new user account"
+					},
+					"response": []
+				},
+				{
+					"name": "User Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "login"]
+						},
+						"description": "Authenticate user and get JWT token"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/profile/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "profile", "{{userId}}"]
+						},
+						"description": "Get user profile information (requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"John Updated\",\n  \"lastName\": \"Doe Updated\",\n  \"phoneNumber\": \"+1-555-0102\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/profile/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "profile", "{{userId}}"]
+						},
+						"description": "Update user profile information (requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"currentPassword\": \"SecurePass123!\",\n  \"newPassword\": \"NewSecurePass456!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/change-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "change-password"]
+						},
+						"description": "Change user password (requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Forgot Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/forgot-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "forgot-password"]
+						},
+						"description": "Request password reset email"
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"reset-token-here\",\n  \"newPassword\": \"NewSecurePass789!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/reset-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "reset-password"]
+						},
+						"description": "Reset password using reset token"
+					},
+					"response": []
+				},
+				{
+					"name": "Check Email Availability",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"newuser@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/check-email",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "check-email"]
+						},
+						"description": "Check if email is available for registration"
+					},
+					"response": []
+				}
+			],
+			"description": "User registration, authentication, and profile management endpoints"
+		},
+		{
+			"name": "🛍️ Product Catalog",
+			"item": [
+				{
+					"name": "Get All Products",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/catalog/products?page=0&size=20&sortBy=name&sortDir=asc",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "catalog", "products"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (0-based)"
+								},
+								{
+									"key": "size",
+									"value": "20",
+									"description": "Page size"
+								},
+								{
+									"key": "sortBy",
+									"value": "name",
+									"description": "Sort field"
+								},
+								{
+									"key": "sortDir",
+									"value": "asc",
+									"description": "Sort direction (asc/desc)"
+								}
+							]
+						},
+						"description": "Get paginated list of products with sorting and filtering"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Products by Category",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/catalog/products?categoryId=cat-001&page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "catalog", "products"],
+							"query": [
+								{
+									"key": "categoryId",
+									"value": "cat-001",
+									"description": "Category ID to filter by"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get products filtered by category"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Products",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/catalog/search?q=laptop&page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "catalog", "search"],
+							"query": [
+								{
+									"key": "q",
+									"value": "laptop",
+									"description": "Search query"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Search products by name or description"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Product by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/catalog/products/prod-001",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "catalog", "products", "prod-001"]
+						},
+						"description": "Get detailed product information by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Categories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/catalog/categories",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "catalog", "categories"]
+						},
+						"description": "Get all available product categories"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Products by Price Range",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/catalog/products?minPrice=100&maxPrice=1000&page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "catalog", "products"],
+							"query": [
+								{
+									"key": "minPrice",
+									"value": "100",
+									"description": "Minimum price"
+								},
+								{
+									"key": "maxPrice",
+									"value": "1000",
+									"description": "Maximum price"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get products within a specific price range"
+					},
+					"response": []
+				}
+			],
+			"description": "Product browsing, searching, and category management endpoints"
+		},
+		{
+			"name": "🛒 Shopping Cart",
+			"item": [
+				{
+					"name": "Get User Cart",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/cart?userId={{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "cart"],
+							"query": [
+								{
+									"key": "userId",
+									"value": "{{userId}}",
+									"description": "User ID"
+								}
+							]
+						},
+						"description": "Get current shopping cart for authenticated user"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Product to Cart",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productId\": \"prod-001\",\n  \"quantity\": 2,\n  \"userId\": \"{{userId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/cart/add",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "cart", "add"]
+						},
+						"description": "Add a product to the shopping cart"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Cart Item Quantity",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"cartItemId\": \"cartitem-001\",\n  \"quantity\": 3\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/cart/update",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "cart", "update"]
+						},
+						"description": "Update quantity of a cart item"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Item from Cart",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/cart/remove/cartitem-001",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "cart", "remove", "cartitem-001"]
+						},
+						"description": "Remove an item from the shopping cart"
+					},
+					"response": []
+				},
+				{
+					"name": "Clear Cart",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/cart/clear?userId={{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "cart", "clear"],
+							"query": [
+								{
+									"key": "userId",
+									"value": "{{userId}}"
+								}
+							]
+						},
+						"description": "Clear all items from the shopping cart"
+					},
+					"response": []
+				},
+				{
+					"name": "Apply Discount Code",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"discountCode\": \"SAVE20\",\n  \"userId\": \"{{userId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/cart/discount",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "cart", "discount"]
+						},
+						"description": "Apply discount code to cart"
+					},
+					"response": []
+				}
+			],
+			"description": "Shopping cart management endpoints"
+		},
+		{
+			"name": "📦 Order Management",
+			"item": [
+				{
+					"name": "Create Order from Cart",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"deliveryAddress\": \"123 Main Street, New York, NY 10001\",\n  \"paymentMethod\": \"CREDIT_CARD\",\n  \"shippingMethod\": \"STANDARD\",\n  \"notes\": \"Please deliver during business hours\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/orders?userId={{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "orders"],
+							"query": [
+								{
+									"key": "userId",
+									"value": "{{userId}}"
+								}
+							]
+						},
+						"description": "Create a new order from the shopping cart"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Order by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/orders/{{orderId}}?userId={{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "orders", "{{orderId}}"],
+							"query": [
+								{
+									"key": "userId",
+									"value": "{{userId}}"
+								}
+							]
+						},
+						"description": "Get order details by order ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Order by Order Number",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/orders/number/ORD-2024-001?userId={{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "orders", "number", "ORD-2024-001"],
+							"query": [
+								{
+									"key": "userId",
+									"value": "{{userId}}"
+								}
+							]
+						},
+						"description": "Get order details by order number"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Orders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/orders/user/{{userId}}?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "orders", "user", "{{userId}}"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get all orders for a specific user"
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Changed my mind\",\n  \"userId\": \"{{userId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/orders/{{orderId}}/cancel",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "orders", "{{orderId}}", "cancel"]
+						},
+						"description": "Cancel an existing order"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Order Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"SHIPPED\",\n  \"trackingNumber\": \"TRK123456789\",\n  \"notes\": \"Order shipped via standard delivery\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/orders/{{orderId}}/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "orders", "{{orderId}}", "status"]
+						},
+						"description": "Update order status (Admin only)"
+					},
+					"response": []
+				}
+			],
+			"description": "Order creation, tracking, and management endpoints"
+		},
+		{
+			"name": "💳 Payment Processing",
+			"item": [
+				{
+					"name": "Process Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"cardNumber\": \"4111111111111111\",\n  \"expiryMonth\": 12,\n  \"expiryYear\": 2026,\n  \"cvv\": \"123\",\n  \"cardholderName\": \"John Doe\",\n  \"billingAddress\": \"123 Main Street, New York, NY 10001\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/process?orderId={{orderId}}&userId={{userId}}&amount=1169.96&paymentMethod=CREDIT_CARD",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "payments", "process"],
+							"query": [
+								{
+									"key": "orderId",
+									"value": "{{orderId}}"
+								},
+								{
+									"key": "userId",
+									"value": "{{userId}}"
+								},
+								{
+									"key": "amount",
+									"value": "1169.96"
+								},
+								{
+									"key": "paymentMethod",
+									"value": "CREDIT_CARD"
+								}
+							]
+						},
+						"description": "Process payment for an order"
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/verify?transactionId=TXN123456789&orderId={{orderId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "payments", "verify"],
+							"query": [
+								{
+									"key": "transactionId",
+									"value": "TXN123456789"
+								},
+								{
+									"key": "orderId",
+									"value": "{{orderId}}"
+								}
+							]
+						},
+						"description": "Verify payment transaction"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payment Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/{{paymentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "payments", "{{paymentId}}"]
+						},
+						"description": "Get payment details by payment ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Payment History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/user/{{userId}}?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "payments", "user", "{{userId}}"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get payment history for a specific user"
+					},
+					"response": []
+				},
+				{
+					"name": "Process Refund",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Product not as described\",\n  \"amount\": 1169.96,\n  \"refundType\": \"FULL\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/{{paymentId}}/refund",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "payments", "{{paymentId}}", "refund"]
+						},
+						"description": "Process refund for a payment"
+					},
+					"response": []
+				}
+			],
+			"description": "Payment processing, verification, and refund endpoints"
+		},
+		{
+			"name": "📊 Monitoring & Health",
+			"item": [
+				{
+					"name": "Actuator Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/actuator/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["actuator", "health"]
+						},
+						"description": "Get application health status via Spring Boot Actuator"
+					},
+					"response": []
+				},
+				{
+					"name": "Actuator Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/actuator/info",
+							"host": ["{{baseUrl}}"],
+							"path": ["actuator", "info"]
+						},
+						"description": "Get application information via Spring Boot Actuator"
+					},
+					"response": []
+				},
+				{
+					"name": "Actuator Metrics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/actuator/metrics",
+							"host": ["{{baseUrl}}"],
+							"path": ["actuator", "metrics"]
+						},
+						"description": "Get application metrics via Spring Boot Actuator"
+					},
+					"response": []
+				},
+				{
+					"name": "H2 Console",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/h2-console",
+							"host": ["{{baseUrl}}"],
+							"path": ["h2-console"]
+						},
+						"description": "Access H2 database console (development only)"
+					},
+					"response": []
+				}
+			],
+			"description": "Application monitoring and database access endpoints"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Set default headers for all requests",
+					"pm.request.headers.add({\n    key: 'Accept',\n    value: 'application/json'\n});\n\n// Set default timeout\npm.request.timeout = 30000;"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Common test script for all requests",
+					"pm.test(\"Status code is 200 or 201\", function () {\n    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);\n});\n\npm.test(\"Response time is less than 5000ms\", function () {\n    pm.expect(pm.response.responseTime).to.be.below(5000);\n});\n\npm.test(\"Response has required headers\", function () {\n    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\n});\n\n// Store auth token if present\nif (pm.response.json().token) {\n    pm.environment.set(\"authToken\", pm.response.json().token);\n}\n\n// Store user ID if present\nif (pm.response.json().userId) {\n    pm.environment.set(\"userId\", pm.response.json().userId);\n}\n\n// Store order ID if present\nif (pm.response.json().orderId) {\n    pm.environment.set(\"orderId\", pm.response.json().orderId);\n}\n\n// Store payment ID if present\nif (pm.response.json().paymentId) {\n    pm.environment.set(\"paymentId\", pm.response.json().paymentId);\n}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string",
+			"description": "Base URL for the ecommerce backend API"
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"type": "string",
+			"description": "JWT authentication token (auto-populated after login)"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string",
+			"description": "User ID (auto-populated after registration/login)"
+		},
+		{
+			"key": "orderId",
+			"value": "",
+			"type": "string",
+			"description": "Order ID (auto-populated after order creation)"
+		},
+		{
+			"key": "paymentId",
+			"value": "",
+			"type": "string",
+			"description": "Payment ID (auto-populated after payment processing)"
+		}
+	]
+}

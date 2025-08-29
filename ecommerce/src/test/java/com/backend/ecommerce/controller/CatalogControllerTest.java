@@ -50,7 +50,7 @@ class CatalogControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.categories").isArray())
-                .andExpect(jsonPath("$.categories.length()").value(3)); // Should have 3 categories from data-h2.sql
+                .andExpect(jsonPath("$.categories.length()").value(8)); // DataLoader creates 8 categories
     }
 
     @Test
@@ -66,21 +66,21 @@ class CatalogControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.products").isArray())
-                .andExpect(jsonPath("$.products.length()").value(4)); // Should have 4 products from data-h2.sql
+                .andExpect(jsonPath("$.products.length()").value(6)); // DataLoader creates 6 products
     }
 
     @Test
     void testGetProductById() throws Exception {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
 
-        // Test getting a specific product
-        mockMvc.perform(get("/api/catalog/products/prod-001")
+        // Test getting a specific product - use the first product ID from DataLoader
+        mockMvc.perform(get("/api/catalog/products/IPH15PRO-128")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.product.id").value("prod-001"))
-                .andExpect(jsonPath("$.product.name").value("Laptop"));
+                .andExpect(jsonPath("$.product.id").value("IPH15PRO-128"))
+                .andExpect(jsonPath("$.product.name").value("iPhone 15 Pro"));
     }
 
     @Test
@@ -89,7 +89,7 @@ class CatalogControllerTest {
 
         // Test searching for products
         mockMvc.perform(get("/api/catalog/search")
-                .param("query", "laptop")
+                .param("query", "iPhone")
                 .param("page", "0")
                 .param("size", "10")
                 .contentType(MediaType.APPLICATION_JSON))
