@@ -15,6 +15,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,7 +28,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*")
+@CrossOrigin
 @Tag(name = "User Management", description = "APIs for user registration, authentication, and profile management")
 public class UserController {
 
@@ -39,7 +41,7 @@ public class UserController {
     @PostMapping("/register")
     @Operation(
         summary = "Register a new user",
-        description = "Creates a new user account with the provided information"
+        description = "Creates a new user account with given infomormation"
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -68,7 +70,7 @@ public class UserController {
         Map<String, Object> response = userService.registerUser(userDto);
         
         if ((Boolean) response.get("success")) {
-            return ResponseEntity.status(201).body(response);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } else {
             return ResponseEntity.badRequest().body(response);
         }
